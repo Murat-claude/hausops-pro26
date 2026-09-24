@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HausOps PRO</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: #F1F3F1; }
+    #root { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script>
+    console.log("[App] HausOps PRO v2 Loading...");
+    
+    // SMOOBU SYNC via Netlify Function
+    async function syncSmoobu() {
+      try {
+        console.log("[Sync] Starting Smoobu sync...");
+        
+        const now = new Date();
+        const from = new Date(now.getTime() - 30*24*60*60*1000).toISOString().slice(0,10);
+        const to = new Date(now.getTime() + 180*24*60*60*1000).toISOString().slice(0,10);
+        
+        const res = await fetch(`/.netlify/functions/smoobu-sync?from=${from}&to=${to}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!res.ok) {
+          const err = await res.text();
+          console.error(`[Sync] Error ${res.status}:`, err);
+          return { success: false, error: `HTTP ${res.status}` };
+        }
+        
+        const data = await res.json();
+        console.log(`[Sync] ✅ Success! ${data.count} bookings`);
+        
+        if (data.bookings && data.bookings.length > 0) {
+          localStorage.setItem('smoobuBookings', JSON.stringify(data.bookings));
+          localStorage.setItem('smoobuLastSync', new Date().toISOString());
+        }
+        
+        return { success: true, count: data.count };
+      } catch (err) {
+        console.error("[Sync] Exception:", err.message);
+        return { success: false, error: err.message };
+      }
+    }
+
+    // Start sync and load app
+    window.addEventListener('load', async () => {
+      console.log("[App] Window loaded, starting Smoobu sync...");
+      const result = await syncSmoobu();
+      console.log("[App] Sync result:", result);
+      
+      // Load React app
+      const script = document.createElement('script');
+      script.src = '/assets/index-GQEOdllv.js';
+      script.type = 'module';
+      document.body.appendChild(script);
+    });
+  </script>
+</body>
+</html>
