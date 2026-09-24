@@ -1,0 +1,12 @@
+[build]
+  command = "echo 'Pre-built static app'"
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production]
+  environment = { }
